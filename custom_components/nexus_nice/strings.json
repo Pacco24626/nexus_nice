@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Cancello Nice di Nexus-T",
+        "description": "Scegli il cancello che il gateway Nexus-T ha pubblicato in Home Assistant e che tipologia di automazione e'. Il disegno e i testi della card si adattano alla tipologia.",
+        "data": {
+          "slot": "Cancello",
+          "nome": "Nome",
+          "tipologia": "Tipologia"
+        }
+      },
+      "verso": {
+        "title": "Verso di apertura",
+        "description": "Serve solo al disegno della card: da che parte si apre guardando il cancello dall'interno.",
+        "data": {
+          "verso": "Verso"
+        }
+      }
+    },
+    "abort": {
+      "nessun_cancello": "Nessun cancello Nice di Nexus-T da configurare. Serve un gateway Nexus-T con un'automazione Nice nella Dashboard e la discovery MQTT attiva; i cancelli gia' configurati non compaiono.",
+      "already_configured": "Questo cancello e' gia' configurato."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tipologia",
+        "data": {
+          "tipologia": "Tipologia"
+        }
+      },
+      "verso": {
+        "title": "Verso di apertura",
+        "description": "Serve solo al disegno della card.",
+        "data": {
+          "verso": "Verso"
+        }
+      }
+    }
+  },
+  "selector": {
+    "tipologia": {
+      "options": {
+        "scorrevole": "Cancello scorrevole",
+        "due_ante": "Cancello a due ante",
+        "una_anta": "Cancello a un'anta",
+        "sezionale": "Porta sezionale",
+        "basculante": "Porta basculante"
+      }
+    },
+    "verso_scorrevole": {
+      "options": {
+        "sinistra": "Scorre verso sinistra",
+        "destra": "Scorre verso destra"
+      }
+    },
+    "verso_una_anta": {
+      "options": {
+        "sinistra": "Cerniera a sinistra",
+        "destra": "Cerniera a destra"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mappa": {
+        "name": "Mappa cancello"
+      }
+    }
+  }
+}

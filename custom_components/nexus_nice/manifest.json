@@ -1,0 +1,22 @@
+{
+  "domain": "nexus_nice",
+  "name": "Nexus Nice",
+  "after_dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [
+    "@Pacco24626"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "http",
+    "frontend",
+    "lovelace"
+  ],
+  "documentation": "https://github.com/Pacco24626/nexus_nice",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Pacco24626/nexus_nice/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

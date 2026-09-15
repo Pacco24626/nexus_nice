@@ -1,0 +1,73 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Nexus-T Nice gate",
+        "description": "Pick the gate published by the Nexus-T gateway and the type of automation. The card drawing and labels follow the type.",
+        "data": {
+          "slot": "Gate",
+          "nome": "Name",
+          "tipologia": "Type"
+        }
+      },
+      "verso": {
+        "title": "Opening direction",
+        "description": "Only used by the card drawing: which way it opens, looking at the gate from inside.",
+        "data": {
+          "verso": "Direction"
+        }
+      }
+    },
+    "abort": {
+      "nessun_cancello": "No Nexus-T Nice gate left to configure. You need a Nexus-T gateway with a Nice automation and MQTT discovery enabled; gates already configured are not listed.",
+      "already_configured": "This gate is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Type",
+        "data": {
+          "tipologia": "Type"
+        }
+      },
+      "verso": {
+        "title": "Opening direction",
+        "description": "Only used by the card drawing.",
+        "data": {
+          "verso": "Direction"
+        }
+      }
+    }
+  },
+  "selector": {
+    "tipologia": {
+      "options": {
+        "scorrevole": "Sliding gate",
+        "due_ante": "Double swing gate",
+        "una_anta": "Single swing gate",
+        "sezionale": "Sectional door",
+        "basculante": "Up-and-over door"
+      }
+    },
+    "verso_scorrevole": {
+      "options": {
+        "sinistra": "Slides to the left",
+        "destra": "Slides to the right"
+      }
+    },
+    "verso_una_anta": {
+      "options": {
+        "sinistra": "Hinge on the left",
+        "destra": "Hinge on the right"
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "mappa": {
+        "name": "Gate map"
+      }
+    }
+  }
+}

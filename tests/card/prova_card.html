@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Collaudo card Nexus Nice</title>
+<!--
+  Collaudo in un browser vero, senza Home Assistant.
+
+    msedge --headless=new --dump-dom file:///.../tests/card/prova_card.html
+    (con ?vista=1 dispone le card per una fotografia invece di collaudare)
+
+  Il risultato va nel <pre id="esiti">: una riga per verifica e un totale.
+-->
+<style>
+  body { margin: 0; padding: 16px; background: #F4F6F9; font-family: Roboto, "Segoe UI", Arial, sans-serif; }
+  .griglia { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+  .griglia > div { width: 420px; }
+  .griglia > div.stretta { width: 340px; }
+  .griglia h2 { font-size: 12px; color: #56616F; margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; }
+</style>
+</head>
+<body>
+<pre id="esiti"></pre>
+<div class="griglia" id="griglia"></div>
+<script src="../../custom_components/nexus_nice/www/nexus-nice-card.js"></script>
+<script>
+(async function () {
+  const ADESSO = Date.now();
+  const iso = (msFa) => new Date(ADESSO - msFa).toISOString();
+  const E = {
+    cancello: "cover.nexus_t_cancello_cancello",
+    passo_passo: "button.nexus_t_cancello_cancello_passo_passo",
+    parziale: "button.nexus_t_cancello_cancello_apertura_parziale",
+    luce: "button.giardino_nexus_t_cancello_cancello_luce_di_cortesia",
+    riavvia: "button.giardino_nexus_t_cancello_cancello_riavvia_interfaccia",
+    registro_leggi: "button.giardino_nexus_t_cancello_cancello_leggi_registro_eventi",
+    registro: "sensor.giardino_nexus_t_cancello_cancello_registro_eventi",
+    sorgente_posizione: "sensor.giardino_nexus_t_cancello_cancello_sorgente_posizione",
+    manovre_accensione: "sensor.giardino_nexus_t_cancello_cancello_manovre_totali",
+    manovre_manutenzione: "sensor.giardino_nexus_t_cancello_cancello_manovre_manutenzione",
+    manutenzione_dovuta: "binary_sensor.giardino_nexus_t_cancello_cancello_manutenzione_dovuta",
+    motivo_arresto: "sensor.giardino_nexus_t_cancello_cancello_motivo_arresto",
+    ostacolo: "binary_sensor.giardino_nexus_t_cancello_cancello_ostacolo",
+    eventi: "event.giardino_nexus_t_cancello_cancello_eventi",
+  };
+  const MAPPA = "sensor.cancello_mappa_cancello";
+
+  function statiBase(opz = {}) {
+    const s = {};
+    const st = (id, state, attributes = {}) => { s[id] = { entity_id: id, state, attributes }; };
+    st(E.cancello, opz.cover || "closed", { current_position: opz.pos ?? 0, supported_features: 15, device_class: "gate" });
+    st(E.registro, iso(3600e3), { voci: 41, eventi: [
+      { ambito: "automazione", azione_t4: "MDAw", ora: "2026-09-15T12:02:25", tipo: "T4 action" },
+      { ambito: "automazione", azione: "open", ora: "2026-09-15T12:02:52", tipo: "DoorAction" },
+      { ambito: "automazione", azione_t4: "nessun codice (000)", ora: "2026-09-15T12:03:01", tipo: "T4 action" },
+      { ambito: "automazione", azione: "close", ora: "2026-09-15T12:03:37", tipo: "DoorAction" },
+    ] });
+    st(E.sorgente_posizione, opz.sorgente || "Encoder della centrale");
+    st(E.manovre_accensione, "12", { unit_of_measurement: "manovre" });
+    st(E.manovre_manutenzione, "4561", { soglia_manutenzione: 7000, unit_of_measurement: "manovre" });
+    st(E.manutenzione_dovuta, "off");
+    st(E.motivo_arresto, "Sconosciuto");
+    st(E.ostacolo, opz.ostacolo || "off");
+    st(E.eventi, opz.evento || "unknown", opz.eventoAttr || { event_types: ["ostruzione"] });
+    st(MAPPA, String((opz.errori || []).length), {
+      ruolo: "mappa_cancello", nome: "Cancello", slot: 1, tipologia: opz.tipologia || "due_ante", verso: opz.verso || "sinistra",
+      entita: opz.entita || { ...E }, errori: opz.errori || [], ultimo_comando: opz.ultimo || null,
+      ultimo_movimento: opz.movimento || null, pedonale: Boolean(opz.pedonale),
+    });
+    if (opz.nonDisponibile) s[E.cancello].state = "unavailable";
+    return s;
+  }
+
+  function hassFinto(stati) {
+    return { states: stati, chiamate: [], callService(d, s, dati, target) { this.chiamate.push([d, s, dati, target]); return Promise.resolve(); } };
+  }
+
+  async function nuovaCard(opz = {}, contenitore) {
+    const card = document.createElement("nexus-nice-card");
+    card.setConfig({ entity: MAPPA });
+    (contenitore || document.getElementById("griglia")).appendChild(card);
+    const hass = hassFinto(statiBase(opz));
+    card.hass = hass;
+    await attendi();
+    return { card, hass, q: (s) => card.shadowRoot.querySelector(s) };
+  }
+  const attendi = () => new Promise((r) => setTimeout(r, 30));
+  const aggiorna = async (c, opz) => { c.hass = hassFinto(statiBase(opz)); c.card.hass = c.hass; await attendi(); };
+  const visibile = (n) => n && !n.hidden && !n.closest("[hidden]");
+
+  const vista = new URLSearchParams(location.search).get("vista");
+  if (vista) {
+    const casi = vista === "2"
+      ? [
+          ["Scorrevole, verso destra, 45%", { tipologia: "scorrevole", verso: "destra", cover: "open", pos: 45 }],
+          ["Un'anta, cerniera a destra, in apertura", { tipologia: "una_anta", verso: "destra", cover: "opening", pos: 55 }],
+          ["Sezionale, chiusa", { tipologia: "sezionale", cover: "closed", pos: 0 }],
+          ["Basculante, 70%", { tipologia: "basculante", cover: "open", pos: 70 }],
+        ]
+      : [
+          ["Due ante, pedonale, errori", { tipologia: "due_ante", cover: "open", pos: 100, pedonale: true, errori: [
+            { ts: iso(3600e3), tipo: "ostruzione", attributi: { codice_base: "12", stato: "stopped" } },
+            { ts: iso(86400e3), tipo: "posizione_rifiutata", attributi: { motivo: "tempo_di_manovra_non_appreso" } },
+          ], ultimo: { azione: "parziale", ts: iso(120e3) }, movimento: iso(120e3) }],
+          ["Telefono, sidecar vecchio", { tipologia: "scorrevole", cover: "closed", entita: { cancello: E.cancello, passo_passo: E.passo_passo, parziale: E.parziale } }],
+          ["Non raggiungibile", { tipologia: "scorrevole", nonDisponibile: true }],
+        ];
+    for (const [titolo, opz] of casi) {
+      const box = document.createElement("div");
+      if (/Telefono/.test(titolo)) box.className = "stretta";
+      box.innerHTML = `<h2>${titolo}</h2>`;
+      document.getElementById("griglia").appendChild(box);
+      const c = await nuovaCard(opz, box);
+      if (opz.errori) c.q("details.diag").open = true;
+    }
+    return;
+  }
+
+  const righe = [];
+  let passate = 0, fallite = 0;
+  const v = (cond, testo) => { if (cond) { passate++; righe.push(`  ok  ${testo}`); } else { fallite++; righe.push(`  NO  ${testo}`); } };
+
+  try {
+    righe.push("1. Due ante chiuso, sidecar V3");
+    let c = await nuovaCard({ tipologia: "due_ante" });
+    v(c.q(".stato-pill").textContent === "Chiuso", "stato «Chiuso»");
+    v(c.q(".pct").textContent === "0%" && c.q(".fonte").textContent === "encoder", "0% da encoder");
+    v(visibile(c.q('[data-cmd="apri"]')) && !visibile(c.q('[data-cmd="chiudi"]')), "chiuso: solo Apri");
+    v(visibile(c.q('[data-cmd="luce"]')) && c.q(".etichetta-parziale").textContent === "Apertura pedonale", "pedonale e luce presenti");
+    v(visibile(c.q(".riquadri")) && c.q('[data-riq="manutenzione"] .val').textContent.includes("4561"), "riquadri con manutenzione 4561");
+    v(c.q('[data-riq="accensione"] .val').textContent === "12", "manovre dall'accensione 12");
+    v(c.q(".conta").textContent === "nessun errore", "diagnostica: nessun errore");
+    const righeRegistro = [...c.card.shadowRoot.querySelectorAll(".lista-registro .riga")].map((r) => r.textContent);
+    v(righeRegistro.length === 4 && righeRegistro[0].includes("Manovra") && righeRegistro[0].includes("chiusura"), "registro dal piu' recente");
+    v(righeRegistro.filter((t) => t.includes("nessun codice (000)")).length === 2, "codice T4 in base64 decodificato come quello gia' decodificato");
+    v(c.q(".v-tipo").textContent === "Cancello a due ante", "tipologia senza verso per il due ante");
+
+    righe.push("2. Comandi");
+    c.q('[data-cmd="apri"]').click();
+    await attendi();
+    v(JSON.stringify(c.hass.chiamate.at(-1)) === JSON.stringify(["cover", "open_cover", {}, { entity_id: E.cancello }]), "Apri -> cover.open_cover sulla cover giusta");
+    c.q('[data-cmd="parziale"]').click();
+    v(JSON.stringify(c.hass.chiamate.at(-1)) === JSON.stringify(["button", "press", {}, { entity_id: E.parziale }]), "Pedonale -> button.press");
+    c.q('[data-cmd="luce"]').click();
+    v(c.hass.chiamate.at(-1)[3].entity_id === E.luce, "Luce -> button.press sulla luce");
+    const slider = c.q("input");
+    slider.value = "70";
+    slider.dispatchEvent(new Event("input"));
+    slider.dispatchEvent(new Event("change"));
+    v(JSON.stringify(c.hass.chiamate.at(-1)) === JSON.stringify(["cover", "set_cover_position", { position: 70 }, { entity_id: E.cancello }]), "slider -> set_cover_position 70");
+
+    righe.push("3. In movimento e fermo a meta'");
+    await aggiorna(c, { tipologia: "due_ante", cover: "opening", pos: 40 });
+    v(c.q(".stato-pill").textContent === "In apertura", "«In apertura»");
+    v(c.q('[data-cmd="apri"]').disabled && c.q('[data-cmd="chiudi"]').disabled, "in moto: verdi disattivati");
+    v(c.q('[data-cmd="stop"]').classList.contains("evidente") && c.q("svg.disegno").classList.contains("in-moto"), "Stop evidente e lampeggiante acceso");
+    v(!c.q(".obiettivo").hidden && c.q(".nota").textContent === "obiettivo 70%", "tacca dell'obiettivo al 70%");
+    await aggiorna(c, { tipologia: "due_ante", cover: "open", pos: 45 });
+    v(visibile(c.q('[data-cmd="apri"]')) && visibile(c.q('[data-cmd="chiudi"]')) && c.q(".verdi").classList.contains("doppi"), "fermo al 45%: Apri e Chiudi insieme");
+    v(c.q(".stato-pill").textContent === "Fermo al 45%", "«Fermo al 45%»");
+    await aggiorna(c, { tipologia: "due_ante", cover: "open", pos: 100 });
+    v(!visibile(c.q('[data-cmd="apri"]')) && visibile(c.q('[data-cmd="chiudi"]')), "tutto aperto: solo Chiudi");
+
+    righe.push("4. Apertura pedonale del due ante");
+    await aggiorna(c, { tipologia: "due_ante", cover: "open", pos: 100, pedonale: true });
+    v(c.q(".stato-pill").textContent === "Aperto · pedonale", "«Aperto · pedonale»");
+    v(visibile(c.q('[data-cmd="apri"]')), "in pedonale Apri resta, per aprire anche l'altra anta");
+    const poligoni = [...c.card.shadowRoot.querySelectorAll("svg.disegno .ante polygon")].map((p) => p.getAttribute("points"));
+    const larghezza = (pts) => { const xs = pts.split(" ").map((c) => Number(c.split(",")[0])); return Math.abs(Math.max(...xs) - Math.min(...xs)); };
+    v(poligoni.length === 2 && larghezza(poligoni[0]) < 50 && larghezza(poligoni[1]) > 220, "anta sinistra aperta, destra chiusa");
+
+    righe.push("5. Eventi e riavvio");
+    const rifiuto = { event_type: "posizione_rifiutata", motivo: "tempo_di_manovra_non_appreso" };
+    let e5 = await nuovaCard({ tipologia: "due_ante" });
+    await aggiorna(e5, { tipologia: "due_ante", evento: iso(10), eventoAttr: rifiuto });
+    v(/tempo di manovra non appreso/.test(e5.q(".riscontro").textContent) && e5.q(".riscontro").classList.contains("no"), "primo evento in assoluto (entita' prima «unknown»): messaggio col motivo");
+    e5 = await nuovaCard({ tipologia: "due_ante", evento: iso(1000), eventoAttr: rifiuto });
+    v(e5.q(".riscontro").textContent === "", "evento gia' presente all'apertura della card: nessun messaggio");
+    await aggiorna(e5, { tipologia: "due_ante", nonDisponibile: true, evento: "unavailable", eventoAttr: {} });
+    await aggiorna(e5, { tipologia: "due_ante", evento: iso(1000), eventoAttr: rifiuto });
+    v(e5.q(".riscontro").textContent === "", "modulo scollegato e ricollegato allo stesso evento: nessun messaggio");
+    await aggiorna(e5, { tipologia: "due_ante", evento: iso(10), eventoAttr: { event_type: "ostruzione" } });
+    v(/Ostacolo/.test(e5.q(".riscontro").textContent), "evento nuovo dopo l'apertura: messaggio");
+    await aggiorna(c, { tipologia: "due_ante", movimento: iso(5000) });
+    v(c.q('[data-cmd="riavvia"]').disabled, "riavvio disattivato nei 30 s dopo un comando di manovra");
+    await aggiorna(c, { tipologia: "due_ante", movimento: iso(60000) });
+    v(!c.q('[data-cmd="riavvia"]').disabled, "dopo 30 s il riavvio torna disponibile");
+    c.q('[data-cmd="riavvia"]').click();
+    await attendi();
+    const chiamatePrima = c.hass.chiamate.length;
+    v(Boolean(c.card.shadowRoot.querySelector(".velo")) && c.hass.chiamate.length === chiamatePrima, "riavvio: prima la conferma, nessun comando");
+    c.card.shadowRoot.querySelector('[data-scelta="si"]').click();
+    await attendi();
+    v(c.hass.chiamate.at(-1)[3].entity_id === E.riavvia && !c.card.shadowRoot.querySelector(".velo"), "confermato: button.press sul riavvio");
+
+    righe.push("6. Storico errori");
+    await aggiorna(c, { tipologia: "due_ante", errori: [
+      { ts: iso(3600e3), tipo: "ostruzione", attributi: { codice_base: "<b>12</b>" } },
+      { ts: iso(40 * 86400e3), tipo: "reset", attributi: {} },
+    ] });
+    const voci = [...c.card.shadowRoot.querySelectorAll(".lista-errori .riga")];
+    v(voci.length === 1 && voci[0].textContent.includes("Ostruzione"), "solo gli ultimi 30 giorni");
+    v(voci[0].innerHTML.includes("&lt;b&gt;12&lt;/b&gt;") && !voci[0].querySelector("b b"), "codici mostrati come testo, non interpretati");
+    v(c.q(".conta").textContent === "1 evento" && c.q(".conta").classList.contains("rosso-t"), "conteggio in rosso con un'ostruzione");
+
+    righe.push("7. Tipologie, verso e sidecar vecchio");
+    c = await nuovaCard({ tipologia: "scorrevole", verso: "destra", cover: "open", pos: 50 });
+    const gruppo = c.q("svg.disegno > g");
+    v(gruppo && gruppo.getAttribute("transform") === "translate(600 0) scale(-1 1)", "verso destra: disegno specchiato");
+    v(c.q(".v-tipo").textContent === "Cancello scorrevole · scorre verso destra", "diagnostica: «scorre verso destra»");
+    v(c.q("svg.disegno .scorre").style.transform === "translate(-126px, 0px)", "anta scorrevole spostata a meta' corsa");
+    c = await nuovaCard({ tipologia: "sezionale", cover: "closed" });
+    v(c.q(".stato-pill").textContent === "Chiusa" && c.q(".etichetta-parziale").textContent === "Apertura parziale" && c.q(".scala-chiuso").textContent === "chiusa", "sezionale: femminile e «Apertura parziale»");
+    v(!c.q("svg.disegno > g[transform]"), "sezionale: mai specchiato");
+    c = await nuovaCard({ tipologia: "scorrevole", entita: { cancello: E.cancello, passo_passo: E.passo_passo, parziale: E.parziale } });
+    v(!visibile(c.q('[data-cmd="luce"]')) && visibile(c.q('[data-cmd="parziale"]')) && c.q(".riga-secondaria").classList.contains("sola"), "sidecar vecchio: niente luce, pedonale a tutta larghezza");
+    v(!visibile(c.q(".riquadri")) && !visibile(c.q(".blocco-registro")) && !visibile(c.q('[data-cmd="riavvia"]')), "sidecar vecchio: niente riquadri, registro e riavvio");
+    c = await nuovaCard({ tipologia: "scorrevole", nonDisponibile: true });
+    v(visibile(c.q(".banner")) && c.q(".stato-pill").textContent === "Non raggiungibile" && c.q('[data-cmd="apri"]').disabled && c.q("input").disabled, "modulo non raggiungibile: avviso e comandi sospesi");
+    c = await nuovaCard({ tipologia: "scorrevole", cover: "open", pos: 50, sorgente: "Stima a tempo" });
+    v(c.q(".fonte").textContent === "stima a tempo" && c.q(".nota").textContent === "posizione non nota, a metà", "stima a tempo al 50%: posizione non nota");
+  } catch (errore) {
+    fallite++;
+    righe.push(`  NO  eccezione: ${errore && errore.stack ? errore.stack : errore}`);
+  }
+  righe.push(`CARD: ${passate}/${passate + fallite} superate`);
+  document.getElementById("esiti").textContent = righe.join("\n");
+  document.getElementById("griglia").innerHTML = "";
+})();
+</script>
+</body>
+</html>
