@@ -85,12 +85,17 @@ def unique_id(slot: int, chiave: str) -> str:
     return f"nexus_nice_{slot}{ENTITA[chiave][1]}"
 
 
-def slot_da_identificativi(identificativi: Iterable[tuple[str, str]]) -> int | None:
-    """Lo slot del cancello (1-5) dal dispositivo MQTT del gateway, se lo e'."""
-    for dominio, valore in identificativi:
-        if dominio != "mqtt":
+def slot_da_identificativi(identificativi: Iterable[tuple[str, ...]]) -> int | None:
+    """Lo slot del cancello (1-5) dal dispositivo MQTT del gateway, se lo e'.
+
+    Non tutti gli identificativi sono coppie: il bridge HomeKit, per esempio, ne
+    registra uno di tre elementi. Spacchettarli in due faceva fallire il config
+    flow con un errore 500 su qualunque impianto che ne avesse uno.
+    """
+    for voce in identificativi:
+        if not isinstance(voce, (tuple, list)) or len(voce) < 2 or voce[0] != "mqtt":
             continue
-        trovato = _IDENTIFICATIVO.fullmatch(str(valore))
+        trovato = _IDENTIFICATIVO.fullmatch(str(voce[1]))
         if trovato:
             return int(trovato.group(1))
     return None

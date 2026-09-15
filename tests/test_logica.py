@@ -60,6 +60,9 @@ v(slot_da_identificativi([("mqtt", "nexus_nice_12")]) == 12, "slot a due cifre")
 v(slot_da_identificativi([("mqtt", "tecnoalarm_gateway")]) is None, "altri dispositivi MQTT esclusi")
 v(slot_da_identificativi([("zha", "nexus_nice_1")]) is None, "solo il dominio mqtt")
 v(slot_da_identificativi([("mqtt", "nexus_nice_1_extra")]) is None, "identificativo intero, non un prefisso")
+v(slot_da_identificativi([("homekit", "01J8X", "accessory")]) is None, "identificativo di tre elementi (bridge HomeKit): ignorato senza errori")
+v(slot_da_identificativi([("homekit", "01J8X", "accessory"), ("mqtt", "nexus_nice_2")]) == 2, "tre elementi insieme a quello del gateway: slot trovato")
+v(slot_da_identificativi([("solo",)]) is None, "identificativo di un elemento: ignorato")
 v(nome_predefinito("Nexus-T Cancello") == "Cancello", "«Nexus-T Cancello» -> «Cancello»")
 v(nome_predefinito("Garage box") == "Garage box", "nome senza prefisso invariato")
 v(nome_predefinito(None) == "Cancello", "nome mancante -> «Cancello»")
@@ -69,6 +72,7 @@ disponibili = cancelli_disponibili(
         ([("mqtt", "nexus_nice_1")], "Nexus-T Cancello"),
         ([("mqtt", "tecnoalarm_gateway")], "Centrale"),
         ([("mqtt", "nexus_nice_3")], "Nexus-T Box"),
+        ([("homekit", "01J8X", "accessory")], "HASS Bridge"),
     ],
     gia_configurati=[3],
 )

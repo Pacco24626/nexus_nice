@@ -6,7 +6,7 @@
  * e l'ultimo comando. I comandi passano dai servizi di Home Assistant.
  */
 
-const VERSIONE_CARD = "1.0.0";
+const VERSIONE_CARD = "1.0.1";
 
 const TIPI = {
   scorrevole: { nome: "Cancello scorrevole", femminile: false, parziale: "Apertura pedonale" },

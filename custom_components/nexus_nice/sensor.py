@@ -40,9 +40,16 @@ class MappaCancelloSensor(SensorEntity):
     def __init__(self, cancello: Cancello) -> None:
         self._cancello = cancello
         self._attr_unique_id = f"{cancello.entry.entry_id}_mappa"
-        # Solo gli identificativi: il sensore si aggiunge al dispositivo che il
-        # gateway ha gia' creato via MQTT, senza cambiarne nome o produttore.
-        self._attr_device_info = DeviceInfo(identifiers={("mqtt", f"nexus_nice_{cancello.slot}")})
+        # Un dispositivo suo. Agganciarsi a quello del gateway con l'identificativo
+        # ("mqtt", "nexus_nice_N") non funziona piu': da Home Assistant 2026 la
+        # ricerca per identificativi e' limitata alla stessa integrazione, e ne
+        # nascerebbe un secondo dispositivo senza nome.
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, cancello.entry.entry_id)},
+            name=cancello.entry.title,
+            manufacturer="Automatic Systems",
+            model="Card Nexus Nice",
+        )
 
     async def async_added_to_hass(self) -> None:
         self.async_on_remove(self._cancello.async_add_listener(self.async_write_ha_state))

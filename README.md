@@ -66,7 +66,7 @@ e non ancora configurati. Per ognuno:
 
 Tipologia e verso si cambiano dopo da **Configura**; il nome rinominando la voce.
 
-Ogni cancello aggiunge un sensore diagnostico **Mappa cancello** al dispositivo del gateway: è
+Ogni cancello crea un dispositivo con il suo nome e un sensore diagnostico **Mappa cancello**: è
 quello da indicare nella card.
 
 ## La card
@@ -108,6 +108,7 @@ casi il gateway lo rifiuterebbe.
 ```bash
 python tests/test_logica.py
 python tests/test_cancello.py
+python tests/test_config_flow.py
 ```
 
 La card si collauda in un browser vero aprendo `tests/card/prova_card.html` (o con Edge/Chrome in
